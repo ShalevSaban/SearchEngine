@@ -1,0 +1,3 @@
+*.patch
+
+src/main/resources/application.properties
