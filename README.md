@@ -1,96 +1,107 @@
+# 🔍 Mini-Google – Distributed Search Engine with Kafka & DFS Crawling
 
-# 💬 Real-Time Sentiment Analysis with Reactive Programming & NLP
-
-This project implements a real-time sentiment analysis pipeline that continuously analyzes the emotional tone of words or phrases provided by the user. It pulls live data from a news source (via API or web scraping), optionally integrates with Twitter, and reacts in real time to new content — all using reactive programming principles.
+This project is a simplified, distributed search engine – similar in concept to Google – built using depth-first crawling, batch processing, and modern big-data tools like **Kafka** and **Elasticsearch**.
 
 ---
 
 ## 📌 Overview
 
-The system enables high-throughput, low-latency sentiment detection by streaming new content (such as news headlines or tweets), applying NLP-based sentiment analysis, and displaying results live.
+Mini-Google starts from a given URL, crawls the web recursively using a **DFS-based strategy**, extracts all the links from each page, and indexes the content.
 
-Users can enter keywords, topics, or phrases, and the system tracks how positively or negatively they're being discussed in real time.
+Each crawled page is processed asynchronously using **Kafka**, and indexed for search using **Elasticsearch**. The architecture supports scaling by breaking the crawling and indexing into parallel, isolated jobs using **MapReduce-like batching**.
 
 ---
 
 ## ⚙️ Technologies Used
 
-| Technology              | Purpose |
-|--------------------------|---------|
-| ⚛️ Reactive Programming   | Non-blocking, event-driven data processing |
-| 🧠 NLP (Natural Language Processing) | Sentiment analysis of text |
-| 🐦 Twitter API           | Optional data source for live social mentions |
-| 🌐 News API / Feed       | Pulls real-time headlines/content |
-| 🖥️ Continuous Browser Feed | Live UI stream of results (optional) |
-| ☁️ Deployment            | Cloud/container-ready for scalable operation |
+| Technology       | Purpose |
+|------------------|---------|
+| 🧭 DFS Crawling   | Recursively visit web pages and extract links |
+| 🧵 Kafka          | Message queue for decoupled crawling & indexing |
+| 🗃️ Map-Reduce     | Split crawling/indexing into distributed jobs |
+| 📥 Read / Write   | Persist raw HTML and indexable data |
+| 🔎 Elasticsearch  | Index and search crawled pages |
+| ☁️ Deployment     | Can be deployed across multiple containers/nodes |
 
 ---
 
 ## 🔁 System Flow
 
-1. **User provides a word or phrase** to monitor sentiment on.
-2. The system starts listening to **news APIs** or **Twitter feed** (if enabled).
-3. Every new piece of content is pushed through a **reactive pipeline**:
-    - Filter content that includes the user query
-    - Analyze the text using an **NLP sentiment model**
-    - Assign a score: positive, neutral, or negative
-4. The sentiment result is published immediately to:
-    - The live feed/dashboard (browser or terminal)
-    - A log or database for historical tracking
+1. **Start from a seed URL** provided by the user.
+2. **Crawl the page** using DFS:
+   - Fetch HTML
+   - Extract `<a href="">` links
+   - Send each discovered URL to Kafka
+3. **Kafka consumers** handle crawling jobs in parallel:
+   - Fetch and clean the content
+   - Extract keywords and metadata
+4. **Processed content** is written into **Elasticsearch** as documents.
+5. Users can then **search** any keyword via REST API or UI → results are fetched from the Elasticsearch index.
 
 ---
 
-## 📊 Example Usage
+## 🧪 Example Flow
 
-**User Input:**
+**User provides seed URL:**
 ```
-Track sentiment for: "Artificial Intelligence"
-```
-
-**Live Feed Output:**
-```
-[+0.82] "AI is revolutionizing healthcare systems across Europe"
-[-0.34] "Fears rise as AI threatens millions of jobs"
-[+0.10] "Artificial intelligence usage increases in small businesses"
+https://example.com
 ```
 
 **What happens:**
-- New headlines are pulled from a news API every few seconds.
-- Sentiment scores are computed in real time using pre-trained NLP models.
-- Each result is classified and displayed live.
+- Crawler visits the page and finds 5 links.
+- Each link is added as a message in Kafka topic `crawl-requests`.
+- Multiple consumers process those links concurrently.
+- Cleaned page data is transformed and stored in Elasticsearch.
+
+**Search request:**
+```
+GET /api/search?query=machine+learning
+```
+
+**Search response (from Elasticsearch):**
+```json
+[
+  {
+    "title": "Introduction to Machine Learning",
+    "url": "https://example.com/ml",
+    "snippet": "Machine learning is a field of AI that focuses on..."
+  },
+  ...
+]
+```
 
 ---
 
-## 🧠 Sentiment Analysis Engine
+## 🏗️ Architecture
 
-- Uses rule-based or machine learning NLP models (e.g. VADER, TextBlob, or custom transformers).
-- Supports word-level or phrase-level polarity scoring.
-- Can be extended to multilingual sentiment detection.
-
----
-
-## 🌍 Reactive Design
-
-- Built using **reactive programming** (e.g., Project Reactor, RxJava, or Spring WebFlux).
-- All data pipelines are **non-blocking**, allowing the system to scale with minimal threads.
-- Perfect for **high-velocity streams** like live tweets or breaking news.
+- **Producer (Crawler)** → reads pages, extracts links → sends URLs to Kafka.
+- **Kafka Topic (`crawl-requests`)** → holds URLs waiting to be processed.
+- **Consumers** → fetch URLs from Kafka, download + parse HTML, clean content.
+- **Elasticsearch** → indexes cleaned data with metadata and keywords.
+- **REST API / UI** → exposes search functionality over indexed content.
 
 ---
 
 ## 🚀 Deployment
 
-- Can run locally or be containerized with Docker.
-- Optional Web UI feed can be deployed via React or simple browser-based terminal.
-- Scalable horizontally with microservices or message queues (e.g., Kafka for backpressure).
+This system is designed for distributed environments:
+
+- Each crawler, processor, and indexer can run in its own container or VM.
+- Kafka ensures fault-tolerant communication between stages.
+- Elasticsearch handles horizontal scaling of indexing and querying.
 
 ---
 
-## 🧠 Future Roadmap
+## 🧠 Future Enhancements
 
-- [ ] Add advanced transformer-based sentiment model (BERT or RoBERTa)
-- [ ] Add heatmap for sentiment over time
-- [ ] Connect to Reddit or other social feeds
-- [ ] Visualize positivity score as graph
-- [ ] Enable user-defined sentiment thresholds and alerts
+- [ ] Add page rank scoring
+- [ ] Detect and avoid duplicate content
+- [ ] Handle robots.txt and rate limiting
+- [ ] Visual frontend for query results
+- [ ] Full-text indexing with NLP enrichment
 
 ---
+
+## 🔗 GitHub Repository
+
+[📂 ShalevSaban/SearchEngine](https://github.com/ShalevSaban/SearchEngine)
